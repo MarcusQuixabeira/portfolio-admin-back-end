@@ -9,3 +9,6 @@ run-production:
 
 migrate:
 	alembic upgrade head
+
+create-admin-user:
+	python scripts/create_user_admin.py

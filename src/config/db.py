@@ -12,9 +12,9 @@ class PSQLConfig(object):
         self.db_url = f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOSTNAME}:{BD_PORT}/{DB_NAME}"
         self.engine = create_engine(self.db_url, echo=True)
 
-    def create_db_and_tables(self):
-        SQLModel.metadata.create_all(self.engine)
-
     def get_session(self):
         with Session(self.engine) as session:
             yield session
+    
+    def get_local_session(self):
+        return Session(self.engine)

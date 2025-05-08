@@ -1,0 +1,84 @@
+import os
+from datetime import timedelta, datetime
+from typing import Annotated
+from fastapi import APIRouter, Depends, HTTPException
+from starlette import status
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
+from pydantic import BaseModel
+from sqlmodel import Session, select
+from passlib.context import CryptContext
+from src.v1.models import User, UserCreate, UserUpdate, Token
+from src.v1.controllers import BaseController
+from src.config.db import PSQLConfig
+from jose import jwt, JWTError
+
+
+SECRET_KEY = os.environ['JWT_SECRET_KEY']
+ALGORITHM = os.environ['JWT_ALGORITHM']
+
+# DB config and initialization
+DB = PSQLConfig()
+
+# Session for dependency injection
+SessionDep = Annotated[Session, Depends(DB.get_session)]
+
+router = APIRouter(
+  prefix='/auth',
+  tags=['Auth'],
+)
+
+bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl='/auth/token')
+
+
+@router.post('/register', status_code=status.HTTP_201_CREATED)
+async def register_new_user(session: SessionDep, user: UserCreate):
+    user.password = bcrypt_context.hash(user.password)
+    BaseController(
+      session,
+      User,
+      UserCreate, 
+      UserUpdate,
+      None
+    ).add_item(user)
+    return {'success': True}
+
+@router.post('/token', response_model=Token)
+async def login(
+    session: SessionDep,
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()]
+):
+    user = authenticate_user(form_data.username, form_data.password, session)
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='username and/or password are invalid.')
+    token = create_access_token(user.username, str(user.id), timedelta(minutes=10))
+    return {'access_token': token, 'token_type': 'bearer'}
+
+def authenticate_user(username: str, password: str, session: Session) -> User:
+    statement = select(User).where(User.username == username)
+    user = session.exec(statement).first()
+    if not user:
+        return False
+    if not bcrypt_context.verify(password, user.password):
+        return False
+    return user
+
+def create_access_token(username: str, user_id: str, expiration_delta: timedelta):
+    payload = {'username': username, 'id': user_id}
+    expires = datetime.utcnow() + expiration_delta
+    payload.update({'expires': str(expires)})
+    return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get('username')
+        user_id: str = payload.get('id')
+        if username is None or user_id is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Could not validate the user.')
+        return {'username': username, 'id': user_id}
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                            detail='Could not validate the user.')
