@@ -1,5 +1,5 @@
 from enum import Enum
 
-class Language(str, Enum):
-    pt_br = "pt-br"
-    en_us = "en-us"
+class LanguageEnum(str, Enum):
+    pt_br = "pt-BR"
+    en_us = "en-US"

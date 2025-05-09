@@ -5,7 +5,7 @@ run-dev:
 	fastapi dev main.py
 
 run-production:
-	fastapi main.py
+	fastapi run main.py
 
 migrate:
 	alembic upgrade head

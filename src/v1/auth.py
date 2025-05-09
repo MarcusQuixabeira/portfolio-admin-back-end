@@ -4,11 +4,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
-from pydantic import BaseModel
 from sqlmodel import Session, select
 from passlib.context import CryptContext
-from src.v1.models import User, UserCreate, UserUpdate, Token
-from src.v1.controllers import BaseController
+from src.v1.models import User, Token
 from src.config.db import PSQLConfig
 from jose import jwt, JWTError
 
@@ -31,19 +29,7 @@ bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
 oauth2_bearer = OAuth2PasswordBearer(tokenUrl='/auth/token')
 
 
-@router.post('/register', status_code=status.HTTP_201_CREATED)
-async def register_new_user(session: SessionDep, user: UserCreate):
-    user.password = bcrypt_context.hash(user.password)
-    BaseController(
-      session,
-      User,
-      UserCreate, 
-      UserUpdate,
-      None
-    ).add_item(user)
-    return {'success': True}
-
-@router.post('/token', response_model=Token)
+@router.post('/token', response_model=Token, status_code=status.HTTP_200_OK)
 async def login(
     session: SessionDep,
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()]

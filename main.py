@@ -1,13 +1,27 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.v1 import auth, admin
+from alembic import command
+from alembic.config import Config
+from mangum import Mangum
+from contextlib import asynccontextmanager
+
+def run_migrations():
+    alembic_cfg = Config("alembic.ini")
+    command.upgrade(alembic_cfg, "head")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    run_migrations()
+    yield
+
+app = FastAPI(lifespan=lifespan)
+handler = Mangum(app)
 
 # CORS allowances
 origins = [
     "http://localhost:5173",
 ]
-
-app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,6 +34,14 @@ app.add_middleware(
 app.include_router(auth.router)
 app.include_router(admin.router)
 
+# @app.on_event("startup")
+# def startup_event():
+#     run_migrations()
+
+@app.get("/")
+def read_root():
+    return {"message": "Welcome to the Portfolio API"}
+
 @app.get("/health", tags=['Health'])
-async def helth_check():
+async def health_check():
     return {"health": True}

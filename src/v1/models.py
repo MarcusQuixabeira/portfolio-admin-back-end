@@ -1,14 +1,14 @@
 import uuid
 from datetime import datetime
 from typing import Literal
-from src.v1.enums import Language
+from src.v1.enums import LanguageEnum
 
 from sqlalchemy import Uuid
 from sqlmodel import Field, SQLModel, String, DateTime
 
 class Language(SQLModel, table=True):
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
-    name: Literal[Language.pt_br, Language.en_us] = Field(sa_type=String)
+    name: Literal[LanguageEnum.pt_br, LanguageEnum.en_us] = Field(sa_type=String)
     description: str
     created_at: datetime = Field(index=True)
     updated_at: datetime | None = Field(index=True)
@@ -54,8 +54,6 @@ class UserCreate(SQLModel):
     email: str = Field(unique=True, index=True)
     username: str
     password: str
-    created_at: datetime = Field(index=True)
-    updated_at: datetime | None = Field(index=True)
 
 class UserUpdate(SQLModel):
     email: str | None = Field(unique=True, index=True)
