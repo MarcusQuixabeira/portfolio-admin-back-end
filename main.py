@@ -15,7 +15,7 @@ async def lifespan(app: FastAPI):
     run_migrations()
     yield
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(lifespan=lifespan, debug=True)
 handler = Mangum(app)
 
 # CORS allowances
@@ -33,10 +33,6 @@ app.add_middleware(
 
 app.include_router(auth.router)
 app.include_router(admin.router)
-
-# @app.on_event("startup")
-# def startup_event():
-#     run_migrations()
 
 @app.get("/")
 def read_root():

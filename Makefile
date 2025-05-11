@@ -5,10 +5,10 @@ run-dev:
 	fastapi dev main.py
 
 run-production:
-	fastapi run main.py
+	fastapi dev main.py
 
 migrate:
 	alembic upgrade head
 
 create-admin-user:
-	python scripts/create_user_admin.py
+	python -m scripts/create_user_admin

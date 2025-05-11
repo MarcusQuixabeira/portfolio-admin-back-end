@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Literal
 from src.v1.enums import LanguageEnum
 
-from sqlalchemy import Uuid
 from sqlmodel import Field, SQLModel, String, DateTime
 
 class Language(SQLModel, table=True):
@@ -28,6 +27,8 @@ class Header(SQLModel, table=True):
     name: str
     title: str
     language_id: uuid.UUID = Field(foreign_key="language.id")
+    created_at: datetime = Field(index=True)
+    updated_at: datetime | None = Field(index=True)
 
 class HeaderCreate(SQLModel):
     image_url: str
@@ -59,6 +60,11 @@ class UserUpdate(SQLModel):
     email: str | None = Field(unique=True, index=True)
     username: str | None
     password: str | None
+
+class CurrentUser(SQLModel):
+    id: uuid.UUID
+    email: str
+    username: str
 
 class Token(SQLModel):
     access_token: str

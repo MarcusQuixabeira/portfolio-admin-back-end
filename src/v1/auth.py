@@ -21,12 +21,12 @@ DB = PSQLConfig()
 SessionDep = Annotated[Session, Depends(DB.get_session)]
 
 router = APIRouter(
-  prefix='/auth',
+  prefix='/api/v1',
   tags=['Auth'],
 )
 
 bcrypt_context = CryptContext(schemes=['bcrypt'], deprecated='auto')
-oauth2_bearer = OAuth2PasswordBearer(tokenUrl='/auth/token')
+oauth2_bearer = OAuth2PasswordBearer(tokenUrl='/api/v1/token')
 
 
 @router.post('/token', response_model=Token, status_code=status.HTTP_200_OK)
