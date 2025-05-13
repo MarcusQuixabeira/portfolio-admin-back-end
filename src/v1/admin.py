@@ -6,14 +6,14 @@ from sqlmodel import Session
 from fastapi import APIRouter, Depends, HTTPException, Query
 from src.v1 import models, controllers
 from starlette import status
-from src.v1.auth import get_current_user
+from src.v1.auth import verify_token
 
 # DB config and initialization
 DB = PSQLConfig()
 
 # Session for dependency injection
 SessionDep = Annotated[Session, Depends(DB.get_session)]
-UserDep = Annotated[dict, Depends(get_current_user)]
+UserIdDep = Annotated[str, Depends(verify_token)]
 
 
 router = APIRouter(
@@ -22,16 +22,22 @@ router = APIRouter(
 )
 
 @router.get('/get_current_user', response_model=models.CurrentUser, status_code=status.HTTP_200_OK)
-def get_user(session: SessionDep, request_user: UserDep) -> models.CurrentUser:
-    user = session.get(models.User, request_user.get('id'))
+def get_user(session: SessionDep, user_id: UserIdDep) -> models.CurrentUser:
+    user = session.get(models.User, user_id)
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                             detail='Could not validate the user.')
     return user
 
+@router.get('/verify_token', status_code=status.HTTP_200_OK)
+def verify_token(user_id: UserIdDep):
+    if not user_id:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
+    return {'token is valid'}
+
 @router.post("/language", status_code=status.HTTP_200_OK)
-def add_language(session: SessionDep, user: UserDep, data: models.LanguageUpdate) -> models.Language:
-    if not user:
+def add_language(session: SessionDep, user_id: UserIdDep, data: models.LanguageUpdate) -> models.Language:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -43,11 +49,11 @@ def add_language(session: SessionDep, user: UserDep, data: models.LanguageUpdate
 
 @router.get("/languages", status_code=status.HTTP_200_OK)
 def list_languages(session: SessionDep,
-    user: UserDep,
+    user_id: UserIdDep,
     offset: int=0,
     limit: Annotated[int, Query(le=100)] = 100
 ) -> List[models.Language]:
-    if not user:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -58,8 +64,8 @@ def list_languages(session: SessionDep,
     ).list_items(limit=limit, offfset=offset)
 
 @router.get("/language/{language_id}", status_code=status.HTTP_200_OK)
-def get_language(session: SessionDep, user: UserDep, language_id: uuid.UUID) -> models.Language:
-    if not user:
+def get_language(session: SessionDep, user_id: UserIdDep, language_id: uuid.UUID) -> models.Language:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -70,8 +76,8 @@ def get_language(session: SessionDep, user: UserDep, language_id: uuid.UUID) -> 
     ).get_item(id=language_id)
 
 @router.delete("/language/{language_id}", status_code=status.HTTP_200_OK)
-def delete_language(session: SessionDep, user: UserDep, language_id: uuid.UUID) -> Dict:
-    if not user:
+def delete_language(session: SessionDep, user_id: UserIdDep, language_id: uuid.UUID) -> Dict:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -84,11 +90,11 @@ def delete_language(session: SessionDep, user: UserDep, language_id: uuid.UUID) 
 @router.patch("/language/{language_id}", status_code=status.HTTP_200_OK)
 def update_language(
     session: SessionDep,
-    user: UserDep,
+    user_id: UserIdDep,
     language_id: uuid.UUID,
     data: models.LanguageUpdate
 ) -> models.Language:
-    if not user:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -99,8 +105,8 @@ def update_language(
     ).update_item(id=language_id, data=data)
 
 @router.post("/header", status_code=status.HTTP_200_OK)
-def add_header( session: SessionDep, user: UserDep, data: models.HeaderCreate) -> models.Header:
-    if not user:
+def add_header( session: SessionDep, user_id: UserIdDep, data: models.HeaderCreate) -> models.Header:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -112,11 +118,11 @@ def add_header( session: SessionDep, user: UserDep, data: models.HeaderCreate) -
 
 @router.get("/headers", status_code=status.HTTP_200_OK)
 def list_headers(session: SessionDep,
-    user: UserDep,
+    user_id: UserIdDep,
     offset: int=0,
     limit: Annotated[int, Query(le=100)] = 100
 ) -> List[models.Header]:
-    if not user:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -127,8 +133,8 @@ def list_headers(session: SessionDep,
     ).list_items(limit=limit, offfset=offset)
 
 @router.get("/header/{header_id}", status_code=status.HTTP_200_OK)
-def get_header(session: SessionDep, user: UserDep, header_id: uuid.UUID) -> models.Header:
-    if not user:
+def get_header(session: SessionDep, user_id: UserIdDep, header_id: uuid.UUID) -> models.Header:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -139,8 +145,8 @@ def get_header(session: SessionDep, user: UserDep, header_id: uuid.UUID) -> mode
     ).get_item(id=header_id)
 
 @router.get("/language/{language_id}/header", status_code=status.HTTP_200_OK)
-def get_header_by_language(session: SessionDep, user: UserDep, language_id: uuid.UUID) -> models.Header:
-    if not user:
+def get_header_by_language(session: SessionDep, user_id: UserIdDep, language_id: uuid.UUID) -> models.Header:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -151,8 +157,8 @@ def get_header_by_language(session: SessionDep, user: UserDep, language_id: uuid
     ).get_item_by_language(language_id=language_id, status_code=status.HTTP_200_OK)
 
 @router.delete("/header/{header_id}")
-def delete_header(session: SessionDep, user: UserDep, header_id: uuid.UUID) -> Dict:
-    if not user:
+def delete_header(session: SessionDep, user_id: UserIdDep, header_id: uuid.UUID) -> Dict:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,
@@ -164,11 +170,11 @@ def delete_header(session: SessionDep, user: UserDep, header_id: uuid.UUID) -> D
 
 @router.patch("/header/{header_id}", status_code=status.HTTP_200_OK)
 def update_header(
-    session: SessionDep, user: UserDep,
+    session: SessionDep, user_id: UserIdDep,
     header_id: uuid.UUID,
     data: models.HeaderUpdate
 ) -> models.Header:
-    if not user:
+    if not user_id:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Authentication failed.')
     return controllers.BaseController(
         session=session,

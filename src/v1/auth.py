@@ -1,5 +1,5 @@
 import os
-from datetime import timedelta, datetime
+from datetime import timedelta, datetime, timezone
 from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from starlette import status
@@ -51,20 +51,22 @@ def authenticate_user(username: str, password: str, session: Session) -> User:
     return user
 
 def create_access_token(username: str, user_id: str, expiration_delta: timedelta):
-    payload = {'username': username, 'id': user_id}
-    expires = datetime.utcnow() + expiration_delta
-    payload.update({'expires': str(expires)})
+    exp = datetime.now(timezone.utc) + expiration_delta
+    payload = {
+        'sub': 'user',
+        'id': user_id,
+        'exp': int(exp.timestamp())
+    }
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
 
-async def get_current_user(token: Annotated[str, Depends(oauth2_bearer)]):
+async def verify_token(token: Annotated[str, Depends(oauth2_bearer)]):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
-        username: str = payload.get('username')
         user_id: str = payload.get('id')
-        if username is None or user_id is None:
+        if user_id is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate the user.')
-        return {'username': username, 'id': user_id}
+                            detail='Could not validate the token.')
+        return user_id
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                            detail='Could not validate the user.')
+                            detail='Could not validate the token or token is expired.')
