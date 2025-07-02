@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from src.v1 import auth, admin
@@ -20,7 +21,7 @@ handler = Mangum(app)
 
 # CORS allowances
 origins = [
-    "http://localhost:5173",
+    os.getenv("FRONT_END_DOMAIN")
 ]
 
 app.add_middleware(
