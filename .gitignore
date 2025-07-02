@@ -1,4 +1,7 @@
 __pycache__
 .env
+*.zip
 env
+.venv
 test_db.db
+/lib
