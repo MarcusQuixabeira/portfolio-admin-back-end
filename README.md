@@ -1,6 +1,6 @@
 # Portfolio Admin Back-end
 
-That's a cool application result of my studies about FastAPI framework featuring:
+That's a still in progress application result of my studies about FastAPI framework featuring:
 
 - **FastAPI** with `fastapi[standard]` for blazing-fast APIs
 - **SQLModel** for intuitive data modeling with SQLAlchemy & Pydantic
