@@ -10,5 +10,8 @@ run-production:
 migrate:
 	alembic upgrade head
 
+revision:
+	alembic revision
+
 create-admin-user:
 	python -m scripts/create_user_admin

@@ -44,6 +44,26 @@ class HeaderUpdate(SQLModel):
     title: str | None
     language_id: uuid.UUID | None
 
+class AboutMe(SQLModel, table=True):
+    id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
+    title: str
+    text: str
+    text2: str
+    language_id: uuid.UUID = Field(foreign_key="language.id")
+    created_at: datetime = Field(index=True)
+    updated_at: datetime | None = Field(index=True)
+class AboutMeCreate(SQLModel):
+    title: str
+    text: str
+    text2: str
+    language_id: uuid.UUID = Field(foreign_key="language.id")
+
+class AboutMeUpdate(SQLModel):
+    title: str
+    text: str
+    text2: str
+    language_id: uuid.UUID = Field(foreign_key="language.id")
+
 class User(SQLModel, table=True):
     __tablename__ = 'users'
     id: uuid.UUID = Field(default_factory=uuid.uuid4, primary_key=True, index=True)
